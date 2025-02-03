@@ -1,62 +1,59 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
     [Header("Movement")]
-    Vector3 speed = new Vector3(0, 0, 0);
-    Vector3 acceleration = new Vector3(0, 0, 0);
-    [SerializeField] float speedfactor;
+    Rigidbody2D rb;
+    [SerializeField] float speedFactor;
+    [SerializeField] float maxSpeed;
     [SerializeField] float jump;
     [SerializeField] float drag;
 
     [Header("Colliders")]
-    bool onFloor;
+    public bool onFloor = false;
+    public bool leftWall = false;
+    public bool rightWall = false;
+    [SerializeField] float spawnPoint;
+    [SerializeField] float deathZone;
     void Start()
     {
-
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
         Movement();
+
+        if (transform.position.y < deathZone)
+        {
+            Vector3 spawn = transform.position;
+            spawn.y = spawnPoint;
+            transform.position = spawn;
+        }
+
     }
 
     void Movement()
     {
-        if (drag > 1) drag = 1;
-        if (drag < 0) drag = 0;
+        float moveInput = 0;
 
-        acceleration = new Vector3(0, 0, 0);
+        if (Input.GetKey(KeyCode.A) && !leftWall)
+            moveInput = -1;
+        if (Input.GetKey(KeyCode.D) && !rightWall)
+            moveInput = 1;
 
-        if (Input.GetKey(KeyCode.A))
-        {
-            acceleration += new Vector3(-speedfactor, 0, 0);
-        }
+        rb.AddForce(new Vector2(moveInput * speedFactor, 0), ForceMode2D.Force);
 
-        if (Input.GetKey(KeyCode.D))
-        {
-            acceleration += new Vector3(speedfactor, 0, 0);
-        }
+        if (Mathf.Abs(rb.velocity.x) > maxSpeed)
+            rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
+
+        if (moveInput == 0 && onFloor)
+            rb.velocity = new Vector2(rb.velocity.x * (1 - drag * Time.deltaTime), rb.velocity.y);
 
         if (Input.GetKeyDown(KeyCode.W) && onFloor)
         {
-            acceleration += new Vector3(0, jump, 0);
-            onFloor = false;
-        }
-
-        speed += acceleration;
-        speed *= drag;
-
-        transform.position += speed * Time.deltaTime;
-    }
-
-    void OnCollisionEnter2D(Collision2D other)
-    {
-        if (other.gameObject.CompareTag("Floor"))
-        {
-            onFloor = true;
+            Debug.Log("pulou");
+            rb.AddForce(new Vector2(0, jump), ForceMode2D.Impulse);
         }
     }
 }
